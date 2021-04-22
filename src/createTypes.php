@@ -300,7 +300,6 @@ use (
         $curStruct = [];
 
         $onClose = function () use ($fileName, $fullClassName, &$getClassRelativeName, &$structure, &$types, &$curStruct): void {
-            error_log("CLOSE: {$fileName}");
             $structure[$fileName] = new FileStructure($curStruct);
             $types[$fullClassName] = new StructureType($getClassRelativeName($fullClassName), false, false);
             $types[$fullClassName]->setFullClassName($fullClassName);

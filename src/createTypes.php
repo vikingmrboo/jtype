@@ -17,7 +17,7 @@ abstract class AbstractType
     {
         $result = $this->getName();
 
-        if($this->isArrayOf()) {
+        if ($this->isArrayOf()) {
             $result .= '[]';
         }
 
@@ -93,7 +93,7 @@ class StructureType extends AbstractType
     {
         $result = parent::toString($tabs) . ': ';
         $structureStr = "{\n{$this->getStructure()->toString("{$tabs}\t")}{$tabs}}";
-        if($this->isArrayOf()) {
+        if ($this->isArrayOf()) {
             $result .= "[$structureStr]";
         } else {
             $result .= $structureStr;
@@ -153,21 +153,21 @@ $structure = [];
  */
 $types = [];
 
-$detectBaseNamespcae = function(string $fqcn): string {throw new RuntimeException("Not initialized");};
+$detectBaseNamespcae = function (string $fqcn): string {
+    throw new RuntimeException("Not initialized");
+};
 
-$getFileByClassName = function(string $fqcn) use(&$detectBaseNamespcae, &$getFileByClassName): string
-{
+$getFileByClassName = function (string $fqcn) use (&$detectBaseNamespcae, &$getFileByClassName): string {
     $detectBaseNamespcae($fqcn);
     return $getFileByClassName($fqcn);
 };
 
-$getClassRelativeName = function (string $fqcn) use(&$detectBaseNamespcae, &$getClassRelativeName)
-{
+$getClassRelativeName = function (string $fqcn) use (&$detectBaseNamespcae, &$getClassRelativeName) {
     $detectBaseNamespcae($fqcn);
     return $getClassRelativeName($fqcn);
 };
 
-$detectBaseNamespcae = function(string $fqcn) use (&$getFileByClassName, $currentDir, &$getClassRelativeName): void {
+$detectBaseNamespcae = function (string $fqcn) use (&$getFileByClassName, $currentDir, &$getClassRelativeName): void {
     $classParts = explode('\\', $fqcn);
     $getNamespaceForFolder = function ($lastDir) use (&$classParts): ?string {
         while ($namespaceLevel = array_pop($classParts)) {
@@ -219,17 +219,14 @@ $detectBaseNamespcae = function(string $fqcn) use (&$getFileByClassName, $curren
 
 
 $getStructure = function (string $fileName)
-    use (
-        $currentDir,
-        &$getFileByClassName,
-        &$getClassRelativeName,
-        &$structure,
-        &$types,
-        &$getStructure,
-        &$onClose
-    )
-: ?FileStructure
-{
+use (
+    $currentDir,
+    &$getFileByClassName,
+    &$getClassRelativeName,
+    &$structure,
+    &$types,
+    &$getStructure,
+): ?FileStructure {
 
     if (isset($structure[$fileName])) {
         return $structure[$fileName];
@@ -246,8 +243,7 @@ $getStructure = function (string $fileName)
 
     $currentNamespace = null;
 
-    $getClassFullName = function (string $class) use (&$currentNamespace, &$uses): string
-    {
+    $getClassFullName = function (string $class) use (&$currentNamespace, &$uses): string {
         if ('\\' === substr($class, 0, 1)) {
             return $class;
         }
@@ -259,46 +255,42 @@ $getStructure = function (string $fileName)
         return "{$currentNamespace}\\{$class}";
     };
 
-    $createFromPhpDoc = function(string $phpdocType)
-        use(
-            $getClassFullName,
-            &$getClassRelativeName
-        )
-    : AbstractType
-    {
+    $createFromPhpDoc = function (string $phpdocType)
+    use (
+        $getClassFullName,
+        &$getClassRelativeName
+    ): AbstractType {
         $paramType = preg_replace('@\?|(?:\|\s*null)|(?:null\s*\|)@', '', $phpdocType, 1, $isNullable);
         $paramType = preg_replace('@\[\]@', '', $paramType, 1, $isArray);
         $isArray = $isArray || 'array' === $paramType;
 
-        if(in_array($paramType, ['int', 'string', 'object', 'bool', 'float', 'array', 'mixed'])) {
+        if (in_array($paramType, ['int', 'string', 'object', 'bool', 'float', 'array', 'mixed'])) {
             return new BaseType($paramType, (bool)$isNullable, $isArray);
         }
         $fullName = $getClassFullName($paramType);
-        $structure = new StructureType($getClassRelativeName($fullName) , (bool)$isNullable, $isArray);
+        $structure = new StructureType($getClassRelativeName($fullName), (bool)$isNullable, $isArray);
         $structure->setFullClassName($fullName);
 
         return $structure;
     };
 
     $processClass = function (string $line)
-        use (
-            &$currentNamespace,
-            &$uses,
-            &$structure,
-            &$types,
-            &$processLine,
-            &$onClose,
-            &$processClass,
-            &$continueRead,
-            &$getFileByClassName,
-            $createFromPhpDoc,
-            $fileName,
-            $getClassFullName,
-            &$getClassRelativeName,
-            $getStructure
-        )
-    : void
-    {
+    use (
+        &$currentNamespace,
+        &$uses,
+        &$structure,
+        &$types,
+        &$processLine,
+        &$onClose,
+        &$processClass,
+        &$continueRead,
+        &$getFileByClassName,
+        &$getClassRelativeName,
+        $createFromPhpDoc,
+        $fileName,
+        $getClassFullName,
+        $getStructure
+    ): void {
         if (!preg_match('@class\s+(\S+)(?:\s+extends\s+(\S+))?(?:\s+implements\s+\S+)?\s*[{]?\s*(?:[/]|$)@su', $line, $matched)) {
             return;
         }
@@ -308,6 +300,7 @@ $getStructure = function (string $fileName)
         $curStruct = [];
 
         $onClose = function () use ($fileName, $fullClassName, &$getClassRelativeName, &$structure, &$types, &$curStruct): void {
+            error_log("CLOSE: {$fileName}");
             $structure[$fileName] = new FileStructure($curStruct);
             $types[$fullClassName] = new StructureType($getClassRelativeName($fullClassName), false, false);
             $types[$fullClassName]->setFullClassName($fullClassName);
@@ -316,7 +309,9 @@ $getStructure = function (string $fileName)
 
         $structure[$fileName] = // prevent recursion
             new FileStructure([]);
-
+        $types[$fullClassName] = new StructureType($getClassRelativeName($fullClassName), false, false);
+        $types[$fullClassName]->setFullClassName($fullClassName);
+        $types[$fullClassName]->setStructure($structure[$fileName]);
 
         if (!empty($matched[2])) {
             $subClass = $getClassFullName($matched[2]);
@@ -324,14 +319,12 @@ $getStructure = function (string $fileName)
             $curStruct = $getStructure($subClassFile)->getStructure();
         }
 
-        $createParam = function(string $paramType)
-            use(
-                $createFromPhpDoc,
-                &$getFileByClassName,
-                &$getStructure
-            )
-        : AbstractType
-        {
+        $createParam = function (string $paramType)
+        use (
+            $createFromPhpDoc,
+            &$getFileByClassName,
+            &$getStructure
+        ): AbstractType {
             $paramType = $createFromPhpDoc($paramType);
 
             if ($paramType instanceof StructureType) {
@@ -441,10 +434,7 @@ $iterator = new RecursiveIteratorIterator($dir);
 
 foreach ($iterator as $item) {
     /** @var SplFileInfo $item */
-    if ($item->isDir()) {
-        continue;
-    }
-    $getStructure($item->getPathname());
+    $item->isDir() || $getStructure($item->getPathname());
 }
 
 foreach ($types as $type) echo "{$type}\n";

@@ -259,8 +259,6 @@ $getStructure = function (string $fileName)
         return "{$currentNamespace}\\{$class}";
     };
 
-
-
     $createFromPhpDoc = function(string $phpdocType)
         use(
             $getClassFullName,
@@ -309,13 +307,15 @@ $getStructure = function (string $fileName)
         $fullClassName = "{$currentNamespace}\\{$className}";
         $curStruct = [];
 
-        ($onClose = function () use ($fileName, $fullClassName, &$getClassRelativeName, &$structure, &$types, &$curStruct): void {
+        $onClose = function () use ($fileName, $fullClassName, &$getClassRelativeName, &$structure, &$types, &$curStruct): void {
             $structure[$fileName] = new FileStructure($curStruct);
             $types[$fullClassName] = new StructureType($getClassRelativeName($fullClassName), false, false);
             $types[$fullClassName]->setFullClassName($fullClassName);
             $types[$fullClassName]->setStructure($structure[$fileName]);
-        })
-        (); // prevent recursion
+        };
+
+        $structure[$fileName] = // prevent recursion
+            new FileStructure([]);
 
 
         if (!empty($matched[2])) {
